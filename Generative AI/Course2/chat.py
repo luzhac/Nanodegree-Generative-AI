@@ -245,7 +245,7 @@ def main():
                         )
                         st.session_state.last_evaluation = evaluation_scores
         
-        # Add assistant response to chat history
+        # Add assistan t response to chat history
         st.session_state.messages.append({"role": "assistant", "content": response})
         st.rerun()
 
