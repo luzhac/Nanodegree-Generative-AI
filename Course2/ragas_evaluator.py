@@ -15,6 +15,14 @@ except ImportError:
 
 def evaluate_response_quality(question: str, answer: str, contexts: List[str], openai_api_key: Optional[str] = None) -> Dict[str, float]:
     """Evaluate response quality using RAGAS metrics"""
+    if not isinstance(question, str) or not question.strip():
+        return {"error": "Invalid input: question must be a non-empty string."}
+    if not isinstance(answer, str) or not answer.strip():
+        return {"error": "Invalid input: answer must be a non-empty string."}
+    if not isinstance(contexts, list) or not contexts:
+        return {"error": "Invalid input: contexts must be a non-empty list of strings."}
+ 
+
     if not RAGAS_AVAILABLE:
         return {"error": "RAGAS not available"}
     

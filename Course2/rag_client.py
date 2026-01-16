@@ -129,32 +129,72 @@ def retrieve_documents(
     return results
 
 
-def format_context(documents: List[str], metadatas: List[Dict]) -> str:
+def format_context(documents: List[str], metadatas: List[Dict], distances: Optional[List[float]] = None) -> str:
+ 
     if not documents:
         return ""
 
+    # Combine documents, metadata, and distances for processing
+    items = []
+    for idx, (doc, meta) in enumerate(zip(documents, metadatas)):
+        distance = distances[idx] if distances and idx < len(distances) else float('inf')
+        items.append({
+            'document': doc,
+            'metadata': meta,
+            'distance': distance,
+            'original_index': idx
+        })
+    
+    # Sort by distance (best match first - lowest distance)
+    items.sort(key=lambda x: x['distance'])
+    
+    # Deduplicate based on content hash or source+chunk_index
+    seen = set()
+    deduplicated_items = []
+    
+    for item in items:
+        doc = item['document']
+        meta = item['metadata']
+        
+        # Create unique key using source and chunk_index if available, otherwise hash content
+        if 'source' in meta and 'chunk_index' in meta:
+            unique_key = f"{meta['source']}::{meta.get('chunk_index', 0)}"
+        else:
+            # Fallback to content hash for deduplication
+            unique_key = hash(doc)
+        
+        # Only add if not seen before
+        if unique_key not in seen:
+            seen.add(unique_key)
+            deduplicated_items.append(item)
+    
     # TODO: Initialize list with header text for context section
     context_parts = ["### Retrieved Context\n"]
 
-    # TODO: Loop through paired documents and their metadata using enumeration
-    for i, (doc, meta) in enumerate(zip(documents, metadatas), start=1):
+    # TODO:Loop through deduplicated and sorted items
+    for i, item in enumerate(deduplicated_items, start=1):
+        doc = item['document']
+        meta = item['metadata']
+        distance = item['distance']
+        
         # TODO: Extract mission information from metadata with fallback value
         mission = meta.get("mission", "unknown").replace("_", " ").title()
         # TODO: Extract source information from metadata with fallback value
         source = meta.get("source", "unknown")
         # TODO: Extract category information from metadata with fallback value
         category = meta.get("category", "unknown").replace("_", " ").title()
-
-        # TODO: Create formatted source header with index number and extracted information
-        header = f"Source {i} | Mission: {mission} | Category: {category} | File: {source}"
+        
+        # TODO Create formatted source header with index number, similarity score, and extracted information
+        score_str = f"Score: {distance:.4f}" if distance != float('inf') else ""
+        header = f"Source {i} | {score_str} | Mission: {mission} | Category: {category} | File: {source}"
         # TODO: Add source header to context parts list
         context_parts.append(header)
 
-        # TODO: Check document length and truncate if necessary
+        # TODOCheck document length and truncate if necessary
         if len(doc) > 1000:
             doc = doc[:1000] + "..."
 
-        # TODO: Add truncated or full document content to context parts list
+        # TODO:Add truncated or full document content to context parts list
         context_parts.append(doc)
         context_parts.append("")
 

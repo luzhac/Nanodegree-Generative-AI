@@ -1,7 +1,7 @@
 ragas
 chromadb
 openai
-steamlit
+streamlit
 rouge_score
 sacrebleu
 rapidfuzz
